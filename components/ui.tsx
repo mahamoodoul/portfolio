@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
+import { TechIcon } from "./TechIcon";
 
 /* Shared primitives: buttons, badges, section headings, page container. */
 
@@ -46,13 +47,15 @@ export function ButtonLink({ href, children, variant = "secondary", external, do
   );
 }
 
+/** Technology chip. Plain-string technologies get a monochrome logo; accent chips (facts, not tools) stay text-only. */
 export function TechBadge({ children, tone = "default" }: { children: ReactNode; tone?: "default" | "accent" }) {
   return (
     <span
-      className={`inline-flex items-center rounded-md border px-2 py-0.5 font-mono text-2xs tracking-tight ${
+      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 font-mono text-2xs tracking-tight ${
         tone === "accent" ? "border-accent/30 bg-accent-soft text-accent-strong" : "border-line bg-surface-2 text-muted"
       }`}
     >
+      {tone === "default" && typeof children === "string" && <TechIcon name={children} className="size-3.5" />}
       {children}
     </span>
   );
