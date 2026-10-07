@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/*
+  Design system
+  Layout: one 1120px reading column; sections are separated by hairlines, not boxes.
+  Cards are reserved for things you can open (projects) and for system diagrams.
+  Color: light by default (cool paper white), dark on request (near-black with a slight blue bias).
+  One signal-blue accent; green only for "available/live" status.
+  Tokens live on :root / [data-theme="dark"] and are exposed to Tailwind through @theme inline.
+*/
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --surface-hover: #fcfdfe;
+  --line: #e3e7ec;
+  --line-strong: #cfd6df;
+  --fg: #0f141a;
+  --muted: #4a5563;
+  --faint: #667183;
+  --accent: #1d6ad0;
+  --accent-strong: #1556a8;
+  --accent-soft: #1d6ad012;
+  --ok: #0f7a50;
+  --warn: #a66300;
+  --panel-shadow: 0 24px 60px -34px rgba(15, 20, 26, 0.25);
+  --selection: #1d6ad030;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0a0c0f;
+  --surface: #101317;
+  --surface-2: #151920;
+  --surface-hover: #12161b;
+  --line: #20262e;
+  --line-strong: #2d343f;
+  --fg: #e8ecf1;
+  --muted: #a2abb8;
+  --faint: #7f8998;
+  --accent: #6cb6ff;
+  --accent-strong: #a3d1ff;
+  --accent-soft: #6cb6ff1a;
+  --ok: #46d39a;
+  --warn: #f2b35b;
+  --panel-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.8);
+  --selection: #6cb6ff40;
+  color-scheme: dark;
+}
+
+@theme {
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+
+  --animate-rise: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-flow: flow 1.6s linear infinite;
+  --animate-pulse-dot: pulse-dot 2.4s ease-in-out infinite;
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes flow {
+    to { stroke-dashoffset: -16; }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 35%, transparent); }
+    50% { box-shadow: 0 0 0 5px transparent; }
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --shadow-panel: var(--panel-shadow);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  color: var(--color-fg);
+  font-feature-settings: "ss01", "cv11";
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+p, li {
+  text-wrap: pretty;
+}
+
+::selection {
+  background: var(--selection);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Subtle page-entry fade used by app/template.tsx on every route change. */
+.page-enter {
+  animation: var(--animate-rise);
+}
+
+/* Dashed connector that slowly "carries" traffic between diagram layers. */
+.flow-line {
+  stroke-dasharray: 4 4;
+  animation: var(--animate-flow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
