@@ -28,10 +28,20 @@ npm run lint
 
 ## Deploy
 
-The site URL defaults to `https://mahamodul.no`. Set `NEXT_PUBLIC_SITE_URL` at build time for another domain; it drives canonical URLs, Open Graph tags, the sitemap and robots.txt.
+Every push to `main` deploys automatically through `.github/workflows/deploy.yml`:
 
-`npm run build` writes plain files to `out/`, so any static host works:
+```
+push to main → npm ci → lint → next build → check export → upload → GitHub Pages (https://mahamodul.no)
+```
 
-- **Vercel / Cloudflare Pages / Netlify:** build command `npm run build`, output directory `out`.
-- **GitHub Pages:** publish `out/` (for a project page under a sub-path, also set `basePath` in `next.config.ts`).
-- **AWS:** `aws s3 sync out/ s3://<bucket> --delete` behind CloudFront.
+Pull requests run the same checks without deploying. To release a change:
+
+```bash
+git add -A
+git commit -m "Describe the change"
+git push
+```
+
+Watch it with `gh run watch` or in the repository's Actions tab. A failed lint or build never reaches the live site.
+
+The custom domain is set in `public/CNAME` and in the repository's Pages settings. DNS for `mahamodul.no` is managed at Cloudflare.
