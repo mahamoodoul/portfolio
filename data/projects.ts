@@ -338,6 +338,280 @@ const travelplaner: Project = {
   ],
 };
 
+const borrowhood: Project = {
+  slug: "borrowhood",
+  title: "BorrowHood",
+  domain: "BACKEND / CLOUD / FULL STACK",
+  problem:
+    "Most households own things they rarely use, while neighbours buy the same items. BorrowHood lets people in Norway borrow from and lend to their neighbours.",
+  summary:
+    "A neighbourhood lending app: a React single-page app and a Flask modular monolith on PostgreSQL, with a transactional outbox and a background worker. It runs in production on one ARM server in Stockholm, built with Terraform, for about 6 USD a month.",
+  evidence: ["Live on AWS", "122 API routes", "16 domain modules", "133 backend tests"],
+  preview: ["React SPA", "Caddy", "Flask API", "PostgreSQL", "Outbox worker"],
+  specs: [
+    ["region", "AWS eu-north-1"],
+    ["database", "PostgreSQL 16"],
+    ["events", "transactional outbox"],
+    ["cost", "~$6 / month"],
+  ],
+  stack: [
+    "Python",
+    "Flask",
+    "SQLAlchemy",
+    "PostgreSQL",
+    "React",
+    "TypeScript",
+    "Vite",
+    "Docker",
+    "Caddy",
+    "Terraform",
+    "AWS EC2",
+    "Amazon S3",
+    "Amazon SES",
+    "SSM",
+    "CloudWatch",
+    "Claude API",
+    "Google sign-in",
+    "GitHub Actions",
+  ],
+  context: "Personal product, built and operated end to end",
+  period: "2026",
+  live: { label: "borrow.mahamodul.no", href: "https://borrow.mahamodul.no" },
+  related: [{ label: "System design (diagrams)", href: "https://claude.ai/artifact/W8CNBSpGGCSZKbR46NADsi" }],
+  privateNote: "The repository is private. I'm happy to walk through the code in an interview.",
+  order: 2,
+  featured: true,
+  sections: [
+    {
+      id: "overview",
+      title: "Project overview",
+      blocks: [
+        {
+          type: "p",
+          text: "Residents list things they own, neighbours request them for specific dates, owners approve, and both sides record pickup, return and a review. The app covers discovery and search on a map, listings with photos, loans with a calendar and checklist, messages, notifications, trust and safety features, moderation and an admin portal, in English and Norwegian.",
+        },
+        {
+          type: "p",
+          text: "Listing help comes from the Claude API, and people can sign in with a password or with Google. The whole system is defined as code, from the Flask modules to the Terraform for AWS.",
+        },
+      ],
+    },
+    {
+      id: "requirements",
+      title: "Requirements",
+      blocks: [
+        {
+          type: "list",
+          items: [
+            "An item can never be booked twice for the same days, even if two requests arrive at once.",
+            "Every step of a loan notifies the other person, in the app and by email, without slowing the request down or sending anything twice.",
+            "Trust comes from a verified email, and sensitive changes need a recent sign-in.",
+            "Run safely in production for a small pilot on a very small budget, with backups and no SSH.",
+          ],
+        },
+      ],
+    },
+    {
+      id: "architecture",
+      title: "Architecture",
+      blocks: [
+        {
+          type: "diagram",
+          diagram: {
+            caption: "One server runs the whole app in Docker; AWS services handle storage, email, settings and alarms.",
+            layers: [
+              {
+                title: "Clients",
+                nodes: [
+                  { label: "React app", detail: "React 18, TypeScript, Vite", tone: "accent" },
+                  { label: "Cloudflare DNS", detail: "DNS only", tone: "external" },
+                ],
+              },
+              {
+                title: "Edge",
+                nodes: [
+                  { label: "Caddy", detail: "automatic HTTPS" },
+                  { label: "nginx", detail: "static SPA, CSP" },
+                ],
+              },
+              {
+                title: "Application",
+                nodes: [
+                  { label: "Flask API", detail: "modular monolith, gunicorn", tone: "accent" },
+                  { label: "worker", detail: "outbox, email, AI jobs" },
+                  { label: "scheduler", detail: "due-date reminders" },
+                ],
+              },
+              {
+                title: "Data",
+                nodes: [
+                  { label: "PostgreSQL 16", detail: "Alembic migrations", tone: "data" },
+                  { label: "outbox_events", detail: "same transaction", tone: "data" },
+                ],
+              },
+            ],
+            edges: ["HTTPS", "/api/v1", "SQL"],
+            planes: [
+              {
+                title: "AWS · eu-north-1",
+                nodes: [
+                  { label: "EC2 t4g.small", detail: "Docker, no SSH" },
+                  { label: "S3", detail: "photos, backups", tone: "data" },
+                  { label: "SES", detail: "email, DKIM" },
+                  { label: "SSM", detail: "secrets, deploys", tone: "security" },
+                  { label: "CloudWatch → SNS", detail: "alarms, auto-recover" },
+                ],
+              },
+              {
+                title: "Outside services",
+                nodes: [
+                  { label: "Claude API", detail: "listing help", tone: "external" },
+                  { label: "Google sign-in", detail: "OIDC + PKCE", tone: "security" },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          type: "p",
+          text: "The backend has 16 domain modules: identity, profiles, trust, safety, neighbourhoods, listings, media, discovery, search, ai, loans, messaging, notifications, moderation, admin and ops. Each owns its models, service and routes, and modules react to each other through events rather than reaching into each other's tables, so any of them could be split out later.",
+        },
+      ],
+    },
+    {
+      id: "loan-flow",
+      title: "Loan lifecycle",
+      blocks: [
+        {
+          type: "sequence",
+          caption: "What happens when someone asks to borrow",
+          steps: [
+            { from: "Borrower", to: "Flask API", label: "POST /api/v1/loans with session cookie and CSRF token" },
+            { from: "loans module", to: "PostgreSQL", label: "Check rules; save the loan and a loan.requested event in one transaction" },
+            { from: "Flask API", to: "Borrower", label: "Answer right away; nothing slow runs inside the request" },
+            { from: "worker", to: "outbox_events", label: "Pick up the event; idempotent handlers retry up to 10 times" },
+            { from: "worker", to: "Amazon SES", label: "In-app notification plus an email to the lender" },
+            { from: "Lender", to: "Flask API", label: "Approve: the same pattern repeats through pickup, return and reviews" },
+          ],
+        },
+        {
+          type: "table",
+          caption: "Loan states and the events they emit",
+          head: ["State", "Event", "Who acts"],
+          rows: [
+            ["Requested", "loan.requested", "Borrower"],
+            ["Approved / declined", "loan.approved, loan.declined", "Lender"],
+            ["Picked up", "loan.picked_up", "Both"],
+            ["Handed back", "loan.handed_back", "Borrower"],
+            ["Returned", "loan.returned", "Lender confirms condition"],
+            ["Reviewed", "review.submitted", "Both"],
+          ],
+        },
+      ],
+    },
+    {
+      id: "decisions",
+      title: "Engineering decisions",
+      blocks: [
+        {
+          type: "decisions",
+          items: [
+            {
+              title: "Transactional outbox",
+              body: "The loan and its event are written in the same database transaction, so a notification can never be lost or sent for a loan that was rolled back. A worker delivers events at least once, and idempotent handlers make retries safe.",
+            },
+            {
+              title: "Let PostgreSQL prevent double bookings",
+              body: "An exclusion constraint refuses overlapping approved dates for the same item. The rule holds even under concurrent requests, and CI runs the tests against real PostgreSQL to exercise it.",
+            },
+            {
+              title: "Modular monolith",
+              body: "One codebase and one database keep a small project easy to run, while module boundaries and events keep it ready to split.",
+            },
+            {
+              title: "Adapters for every outside service",
+              body: "Email (SES, SMTP or log), storage (S3 or local), AI (Claude or none) and identity verification are swappable by configuration, so the app runs fully offline in development.",
+            },
+            {
+              title: "One server now, a managed setup ready",
+              body: "The low-cost Terraform setup runs everything on one EC2 instance. A second Terraform setup with a load balancer, Fargate, RDS and WAF is ready for when traffic justifies about $100–135 a month.",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: "security",
+      title: "Security",
+      blocks: [
+        {
+          type: "list",
+          items: [
+            "Only ports 80 and 443 are open, with no SSH; admin access goes through SSM Session Manager, and IMDSv2 is required.",
+            "HTTPS everywhere with HSTS, and a strict Content-Security-Policy from nginx.",
+            "Secure, HTTP-only session cookies with CSRF tokens, idempotency keys on writes, and a recent sign-in required for sensitive changes.",
+            "Google sign-in uses OpenID Connect with PKCE.",
+            "Photos are private in S3 and load through 5-minute signed links.",
+            "The app refuses to start in production with unsafe settings, such as mock providers, fake email or non-secure cookies.",
+          ],
+        },
+      ],
+    },
+    {
+      id: "operations",
+      title: "Cloud, cost & reliability",
+      blocks: [
+        {
+          type: "metrics",
+          items: [
+            { value: "~$6", label: "per month", note: "on the AWS free trial; about $16–18 from 2027" },
+            { value: "Nightly", label: "database dumps", note: "14 days on the server, 30 days in S3" },
+            { value: "Daily", label: "disk snapshots", note: "kept 3 days" },
+            { value: "0", label: "open SSH ports", note: "SSM Session Manager only" },
+          ],
+          source: "From the project's system design document and Terraform.",
+        },
+        {
+          type: "list",
+          items: [
+            "CloudWatch alarms recover the server onto healthy hardware automatically, and a budget alert emails when usage grows.",
+            "Settings and secrets live in SSM Parameter Store and reach the server only at deploy time.",
+            "CI runs ruff and the backend tests on both SQLite and PostgreSQL, and builds the frontend.",
+          ],
+        },
+      ],
+    },
+    {
+      id: "tradeoffs",
+      title: "Trade-offs",
+      blocks: [
+        {
+          type: "list",
+          items: [
+            "One server in one zone: if it fails, the site is down until it recovers.",
+            "No web application firewall yet; the app's own rate limits stay on.",
+            "The database shares the server instead of running on RDS.",
+          ],
+        },
+      ],
+    },
+    {
+      id: "learned",
+      title: "What I learned",
+      blocks: [
+        {
+          type: "list",
+          items: [
+            "Putting critical rules in the database (the exclusion constraint) is more reliable than checking them in application code.",
+            "The outbox pattern makes background work dependable without adding a message broker.",
+            "Writing down the cost and the trade-offs of the cheap setup made it easy to see what to upgrade first.",
+          ],
+        },
+      ],
+    },
+  ],
+};
+
 const zeroTrust: Project = {
   slug: "zero-trust-microservices",
   title: "Zero Trust Microservices",
@@ -366,7 +640,7 @@ const zeroTrust: Project = {
   period: "2024 – 2025",
   repo: { label: "microservice_dot_net", href: "https://github.com/mahamoodoul/microservice_dot_net" },
   privateNote: "The base application is public. The thesis and hardening code are in a private repository; I can share them on request.",
-  order: 2,
+  order: 3,
   featured: true,
   sections: [
     {
@@ -595,8 +869,8 @@ const awsPipeline: Project = {
   context: "Data engineering project",
   period: "2025",
   repo: { label: "care-plus-de", href: "https://github.com/mahamoodoul/care-plus-de" },
-  order: 3,
-  featured: true,
+  order: 4,
+  featured: false,
   sections: [
     {
       id: "overview",
@@ -726,7 +1000,7 @@ const dotnetMicroservices: Project = {
   context: "Backend project",
   period: "2024 – 2025",
   repo: { label: "microservice_dot_net", href: "https://github.com/mahamoodoul/microservice_dot_net" },
-  order: 4,
+  order: 5,
   featured: false,
   sections: [
     {
@@ -862,7 +1136,7 @@ const bengali: Project = {
       href: "https://github.com/mahamoodoul/thesis-bengali-news-clasification-machine-learning",
     },
   ],
-  order: 5,
+  order: 6,
   featured: false,
   sections: [
     {
@@ -948,7 +1222,7 @@ const bengali: Project = {
   ],
 };
 
-export const projects: Project[] = [travelplaner, zeroTrust, awsPipeline, dotnetMicroservices, bengali].sort(
+export const projects: Project[] = [travelplaner, borrowhood, zeroTrust, awsPipeline, dotnetMicroservices, bengali].sort(
   (a, b) => a.order - b.order,
 );
 

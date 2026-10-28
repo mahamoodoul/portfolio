@@ -3,6 +3,14 @@ import {
   siApachearrow,
   siApachespark,
   siBootstrap,
+  siCaddy,
+  siClaude,
+  siFlask,
+  siGoogle,
+  siNginx,
+  siReact,
+  siSqlalchemy,
+  siVite,
   siDatabricks,
   siDocker,
   siDotnet,
@@ -98,6 +106,14 @@ const brands: Record<string, Brand> = {
   TensorFlow: siTensorflow,
   Terraform: siTerraform,
   TypeScript: siTypescript,
+  Flask: siFlask,
+  SQLAlchemy: siSqlalchemy,
+  React: siReact,
+  Vite: siVite,
+  Caddy: siCaddy,
+  nginx: siNginx,
+  "Claude API": siClaude,
+  "Google sign-in": siGoogle,
 };
 
 /* Generic stroke glyphs on a 24px grid. */
@@ -139,6 +155,7 @@ const generic: Record<string, Glyph> = {
   ECR: "box",
   IAM: "key",
   SSM: "key",
+  "Amazon SES": "message",
   "Azure Service Bus": "message",
   "Azure DevOps": "workflow",
   // languages, frameworks, tools without a free logo

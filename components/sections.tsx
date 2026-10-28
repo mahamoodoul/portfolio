@@ -117,7 +117,7 @@ export function Work() {
         </div>
 
         <h3 className="mt-14 mb-5 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-muted">More case studies</h3>
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 lg:grid-cols-3">
           {more.map((p) => (
             <ProjectCard key={p.slug} project={p} size="compact" />
           ))}
